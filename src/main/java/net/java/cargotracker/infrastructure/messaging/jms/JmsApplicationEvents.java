@@ -30,6 +30,21 @@ public class JmsApplicationEvents implements ApplicationEvents, Serializable {
     private static final Logger logger = Logger.getLogger(
             JmsApplicationEvents.class.getName());
 
+    /**
+     * Returns the injected queue, or creates it by name when the container did
+     * not inject it. TomEE leaves the {@code @Resource(lookup=...)} fields of this
+     * CDI bean {@code null}, which makes {@code send} fail with "A destination
+     * must be specified". The message-driven beans listen on a queue whose name
+     * is the {@code destinationLookup} string, so creating the queue with that
+     * same name reaches them.
+     */
+    private Destination queue(Destination injected, String jndiName) {
+        if (injected != null) {
+            return injected;
+        }
+        return jmsContext.createQueue(jndiName);
+    }
+
     @Override
     public void cargoWasHandled(HandlingEvent event) {
         Cargo cargo = event.getCargo();
@@ -38,7 +53,7 @@ public class JmsApplicationEvents implements ApplicationEvents, Serializable {
                 .setPriority(LOW_PRIORITY)
                 .setDisableMessageID(true)
                 .setDisableMessageTimestamp(true)
-                .send(cargoHandledQueue,
+                .send(queue(cargoHandledQueue, "java:app/jms/CargoHandledQueue"),
                         cargo.getTrackingId().getIdString());
     }
 
@@ -49,7 +64,7 @@ public class JmsApplicationEvents implements ApplicationEvents, Serializable {
                 .setPriority(LOW_PRIORITY)
                 .setDisableMessageID(true)
                 .setDisableMessageTimestamp(true)
-                .send(misdirectedCargoQueue,
+                .send(queue(misdirectedCargoQueue, "java:app/jms/MisdirectedCargoQueue"),
                         cargo.getTrackingId().getIdString());
     }
 
@@ -60,7 +75,7 @@ public class JmsApplicationEvents implements ApplicationEvents, Serializable {
                 .setPriority(LOW_PRIORITY)
                 .setDisableMessageID(true)
                 .setDisableMessageTimestamp(true)
-                .send(deliveredCargoQueue,
+                .send(queue(deliveredCargoQueue, "java:app/jms/DeliveredCargoQueue"),
                         cargo.getTrackingId().getIdString());
     }
 
@@ -74,6 +89,7 @@ public class JmsApplicationEvents implements ApplicationEvents, Serializable {
                 .setDisableMessageID(true)
                 .setDisableMessageTimestamp(true)
                 .setTimeToLive(1000)
-                .send(handlingEventQueue, attempt);
+                .send(queue(handlingEventQueue,
+                        "java:app/jms/HandlingEventRegistrationAttemptQueue"), attempt);
     }
 }
