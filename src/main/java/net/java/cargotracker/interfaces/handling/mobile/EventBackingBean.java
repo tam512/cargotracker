@@ -4,10 +4,11 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
+import javax.enterprise.context.SessionScoped;
 import javax.faces.application.FacesMessage;
 import javax.faces.context.FacesContext;
-import javax.faces.flow.FlowScoped;
 import javax.faces.model.SelectItem;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -29,8 +30,11 @@ import org.primefaces.context.RequestContext;
  * @author davidd
  */
 @Named
-@FlowScoped("eventLogger")
+@SessionScoped
 public class EventBackingBean implements Serializable {
+
+    // TEMP-DEBUG: remove once the Next/Voyage enablement issue is diagnosed
+    private static final Logger DEBUG_LOG = Logger.getLogger(EventBackingBean.class.getName());
 
     @Inject
     private CargoDetails cargoDetails;
@@ -176,6 +180,8 @@ public class EventBackingBean implements Serializable {
     }
 
     public void updateListenerEvent() {
+        DEBUG_LOG.info("TEMP-DEBUG updateListenerEvent() called: eventType=" + eventType
+                + ", voyageNumber=" + voyageNumber + ", trackId=" + trackId + ", location=" + location);
         // Voyage should only be set for LOAD & UNLOAD events. For other events, it should be null
         loadEventCondition = false;
         voyageSelectable = false;
@@ -197,6 +203,9 @@ public class EventBackingBean implements Serializable {
     }
 
     public void checkConditions() {
+        DEBUG_LOG.info("TEMP-DEBUG checkConditions() called: trackId=" + trackId + ", eventType=" + eventType
+                + ", location=" + location + ", loadEventCondition=" + loadEventCondition
+                + ", voyageSelectable=" + voyageSelectable);
         //If event = LOAD or UNLOAD -> Voyage should be null
         if (trackId != null && eventType != null && location != null && (eventType != null && loadEventCondition)) {
             // All condition are Ok, Next screen button can be enable
